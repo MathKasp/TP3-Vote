@@ -3,14 +3,13 @@ pragma solidity ^0.8.33;
 
 /**
  * @title MyFirstToken
- * @notice Implémentation ERC20 from scratch à des fins pédagogiques
  *
  * Invariants à maintenir :
  * - La somme de tous les balances == totalSupply
  * - Un transfert ne peut jamais créer ou détruire des tokens
  * - allowance diminue correctement après un transferFrom
  */
-contract MyFirstToken {
+contract TokenDeVote {
     // --- Métadonnées ---
     string public name;
     string public symbol;
@@ -19,6 +18,8 @@ contract MyFirstToken {
     uint256 public totalSupply;
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) internal _allowances;
+    mapping(address => bool) public hasClaimed;
+    mapping(address => bool) public hasVoted;
     // --- Events ---
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(
@@ -28,21 +29,44 @@ contract MyFirstToken {
     );
 
     /**
-     * @notice Constructeur — mint la supply initiale au déployeur
-     * @param _name Nom du token (ex: "My First Token")
-     * @param _symbol Symbole du token (ex: "MFT")
-     * @param _initialSupply Nombre de tokens à créer (en unités, pas en wei)
+     * @notice Constructeur — le token de vote utilise une unité entière
+     * @param _name Nom du token (ex: "Token de Vote")
+     * @param _symbol Symbole du token (ex: "TDV")
      */
-    constructor(
-        string memory _name,
-        string memory _symbol,
-        uint256 _initialSupply
-    ) {
+    constructor(string memory _name, string memory _symbol) {
         name = _name;
         symbol = _symbol;
-        decimals = 18;
-        // Mint la supply initiale au déployeur
-        _mint(msg.sender, _initialSupply * 10 ** decimals);
+        decimals = 0;
+        totalSupply = 0;
+    }
+
+    /**
+     * @notice Chaque utilisateur peut réclamer un token de vote unique
+     * @dev Un booléen 'hasClaimed' empêche la double réclamation
+     */
+    function claimToken() external returns (bool) {
+        require(!hasClaimed[msg.sender], "Token already claimed");
+        hasClaimed[msg.sender] = true;
+        _mint(msg.sender, 1);
+        return true;
+    }
+
+    /*
+     * @notice Vote en donnant son token à une autre adresse
+     * @dev Un booléen 'hasVoted' empêche de voter deux fois
+     */
+    function vote(address candidate) external returns (bool) {
+        require(candidate != address(0), "Vote for zero address");
+        require(candidate != msg.sender, "Cannot vote for yourself");
+        require(!hasVoted[msg.sender], "Already voted");
+        require(_balances[msg.sender] >= 1, "No voting token");
+
+        _balances[msg.sender] -= 1;
+        _balances[candidate] += 1;
+        hasVoted[msg.sender] = true;
+
+        emit Transfer(msg.sender, candidate, 1);
+        return true;
     }
 
     // ================================================================
@@ -52,16 +76,14 @@ contract MyFirstToken {
      * @notice Retourne le solde d'une adresse
      */
     function balanceOf(address account) external view returns (uint256) {
-        // TODO: retourner le solde de 'account'
         return _balances[account];
     }
 
-    /** 
-     * @notice Transfère 'amount' tokens vers 'to' 
-     * @dev Doit revert si le solde est insuffisant 
-     * @dev Doit émettre un event Transfer 
-     * @dev Doit retourner true en cas de succès 
-
+    /**
+     * @notice Transfère 'amount' tokens vers 'to'
+     * @dev Doit revert si le solde est insuffisant
+     * @dev Doit émettre un event Transfer
+     * @dev Doit retourner true en cas de succès
      */
     function transfer(
         address to,
@@ -83,7 +105,6 @@ contract MyFirstToken {
         address owner,
         address spender
     ) external view returns (uint256) {
-        // TODO: retourner l'allowance
         return _allowances[owner][spender];
     }
 
@@ -92,9 +113,6 @@ contract MyFirstToken {
      * @dev Doit émettre un event Approval
      */
     function approve(address spender, uint256 amount) external returns (bool) {
-        // TODO: implémenter l'approbation
-        // Mettre à jour _allowances[msg.sender][spender]
-        // Émettre Approval(msg.sender, spender, amount)
         _allowances[msg.sender][spender] = amount;
         emit Approval(msg.sender, spender, amount);
         return true;
@@ -110,14 +128,6 @@ contract MyFirstToken {
         address to,
         uint256 amount
     ) public virtual returns (bool) {
-        // TODO: implémenter transferFrom
-        // Vérifications :
-        // - _allowances[from][msg.sender] >= amount
-        // - from != address(0) et to != address(0)
-        // - _balances[from] >= amount
-        // Décrémenter l'allowance
-        // Mettre à jour les soldes
-        // Émettre Transfer(from, to, amount)
         require(from != address(0), "Transfer from zero address");
         require(to != address(0), "Transfer to zero address");
         require(_balances[from] >= amount, "Insufficient balance");

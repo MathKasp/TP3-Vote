@@ -2,6 +2,15 @@ import { useState } from 'react'
 import heroImg from './assets/hero.png'
 import './App.css'
 
+declare global {
+  interface Window {
+    ethereum?: {
+      isMetaMask?: boolean
+      request: (request: { method: string }) => Promise<string[]>
+    }
+  }
+}
+
 type User = {
   id: string
   name: string
@@ -19,6 +28,8 @@ function App() {
   const [users, setUsers] = useState<User[]>(initialUsers)
   const [currentUserId, setCurrentUserId] = useState(users[0].id)
   const [votes, setVotes] = useState<Record<string, string>>({})
+  const [walletAddress, setWalletAddress] = useState('')
+  const [walletInput, setWalletInput] = useState('')
 
   const currentVote = votes[currentUserId]
 
@@ -38,6 +49,23 @@ function App() {
     setVotes({})
   }
 
+  const handleConnectWallet = () => {
+    const address = walletInput.trim()
+    const isValidAddress = /^0x[a-fA-F0-9]{40}$/.test(address)
+
+    if (!isValidAddress) {
+      alert('Merci de saisir une adresse de wallet valide (0x... à 40 caractères).')
+      return
+    }
+
+    setWalletAddress(address)
+  }
+
+  const handleDisconnectWallet = () => {
+    setWalletAddress('')
+    setWalletInput('')
+  }
+
   return (
     <main className="app-shell">
       <header className="hero-section">
@@ -47,6 +75,39 @@ function App() {
         <div className="hero-copy">
           <h1>Interface de vote</h1>
           <p>Choisissez un utilisateur, puis votez pour un autre membre de la communauté.</p>
+          <div className="wallet-connect">
+            <p className="wallet-status">
+              {walletAddress
+                ? `Connecté : ${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`
+                : 'Entrez l’adresse de votre wallet pour vous connecter.'}
+            </p>
+            <input
+              type="text"
+              className="wallet-input"
+              placeholder="0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+              value={walletInput}
+              onChange={(event) => setWalletInput(event.target.value)}
+              disabled={Boolean(walletAddress)}
+            />
+            <div className="wallet-actions">
+              <button
+                type="button"
+                className="connect-button"
+                onClick={handleConnectWallet}
+                disabled={Boolean(walletAddress)}
+              >
+                {walletAddress ? 'Portefeuille connecté' : 'Connecter l’adresse'}
+              </button>
+              <button
+                type="button"
+                className="disconnect-button"
+                onClick={handleDisconnectWallet}
+                disabled={!walletAddress}
+              >
+                Déconnecter
+              </button>
+            </div>
+          </div>
         </div>
       </header>
 

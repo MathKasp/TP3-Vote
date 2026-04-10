@@ -271,7 +271,8 @@
 }
 
 .vote-button,
-.reset-button {
+.reset-button,
+.connect-button {
     border: none;
     background: var(--accent);
     color: white;
@@ -282,14 +283,36 @@
     transition: transform 0.2s ease, filter 0.2s ease;
 }
 
+.wallet-input {
+    width: 100%;
+    margin: 12px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-size: 15px;
+    color: var(--text-h);
+    background: white;
+}
+
+.wallet-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
 .vote-button:hover:not(:disabled),
-.reset-button:hover:not(:disabled) {
+.reset-button:hover:not(:disabled),
+.connect-button:hover:not(:disabled),
+.disconnect-button:hover:not(:disabled) {
     transform: translateY(-1px);
     filter: brightness(1.05);
 }
 
 .vote-button:disabled,
-.reset-button:disabled {
+.reset-button:disabled,
+.connect-button:disabled,
+.disconnect-button:disabled {
     background: var(--border);
     color: var(--text);
     cursor: default;
